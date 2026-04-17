@@ -1,15 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  ArrowRight,
+  BellRing,
   BrainCircuit,
+  ChartColumnIncreasing,
+  CheckCircle2,
   Clock3,
   Gauge,
   HeartPulse,
+  Home,
   Keyboard,
   MousePointer2,
   PauseCircle,
   RefreshCw,
   ShieldAlert,
+  Sparkles,
   SquareMousePointer,
   Stethoscope,
   TrendingDown,
@@ -22,6 +28,39 @@ const modeIcons = {
   Aviation: Gauge,
   Healthcare: Stethoscope,
 };
+
+const pageDefinitions = [
+  {
+    id: "overview",
+    label: "Overview",
+    description: "Main decision dashboard",
+    icon: Home,
+  },
+  {
+    id: "explainability",
+    label: "Explainability",
+    description: "Why risk is changing",
+    icon: BrainCircuit,
+  },
+  {
+    id: "metrics",
+    label: "Live Metrics",
+    description: "Behavioral telemetry",
+    icon: ChartColumnIncreasing,
+  },
+  {
+    id: "trends",
+    label: "Trend Analysis",
+    description: "History and trajectory",
+    icon: TrendingUp,
+  },
+  {
+    id: "recovery",
+    label: "Recovery Hub",
+    description: "Baseline and actions",
+    icon: HeartPulse,
+  },
+];
 
 const scenarios = {
   Normal: {
@@ -39,10 +78,10 @@ const scenarios = {
     status: "Fresh",
     trend: [18, 20, 19, 24, 23, 26, 28],
     factors: [
-      { label: "Increased pause duration", icon: PauseCircle, trend: "down", tone: "good", value: "-8%" },
-      { label: "Reduced typing speed", icon: Keyboard, trend: "up", tone: "good", value: "+4%" },
-      { label: "High error rate", icon: TriangleAlert, trend: "down", tone: "good", value: "-11%" },
-      { label: "Frequent tab switching", icon: RefreshCw, trend: "down", tone: "good", value: "-15%" },
+      { label: "Increased pause duration", icon: PauseCircle, trend: "down", tone: "good", value: "-8%", detail: "Pause duration is shorter than your recent average." },
+      { label: "Reduced typing speed", icon: Keyboard, trend: "up", tone: "good", value: "+4%", detail: "Typing rhythm remains near your personal baseline." },
+      { label: "High error rate", icon: TriangleAlert, trend: "down", tone: "good", value: "-11%", detail: "Error corrections are low and controlled." },
+      { label: "Frequent tab switching", icon: RefreshCw, trend: "down", tone: "good", value: "-15%", detail: "Attention is steady with fewer context switches." },
     ],
   },
   Fatigued: {
@@ -60,10 +99,10 @@ const scenarios = {
     status: "Fatigued",
     trend: [42, 48, 56, 61, 69, 77, 84],
     factors: [
-      { label: "Increased pause duration", icon: PauseCircle, trend: "up", tone: "bad", value: "+31%" },
-      { label: "Reduced typing speed", icon: Keyboard, trend: "down", tone: "bad", value: "-25%" },
-      { label: "High error rate", icon: TriangleAlert, trend: "up", tone: "bad", value: "+40%" },
-      { label: "Frequent tab switching", icon: RefreshCw, trend: "up", tone: "bad", value: "+29%" },
+      { label: "Increased pause duration", icon: PauseCircle, trend: "up", tone: "bad", value: "+31%", detail: "Longer pauses suggest slowing cognitive response." },
+      { label: "Reduced typing speed", icon: Keyboard, trend: "down", tone: "bad", value: "-25%", detail: "Typing throughput has fallen well below your norm." },
+      { label: "High error rate", icon: TriangleAlert, trend: "up", tone: "bad", value: "+40%", detail: "Error correction spikes indicate degraded attention." },
+      { label: "Frequent tab switching", icon: RefreshCw, trend: "up", tone: "bad", value: "+29%", detail: "Rapid context switching correlates with fatigue onset." },
     ],
   },
   Recovery: {
@@ -81,20 +120,20 @@ const scenarios = {
     status: "Moderate",
     trend: [76, 71, 67, 64, 61, 59, 57],
     factors: [
-      { label: "Increased pause duration", icon: PauseCircle, trend: "down", tone: "good", value: "-10%" },
-      { label: "Reduced typing speed", icon: Keyboard, trend: "up", tone: "good", value: "+9%" },
-      { label: "High error rate", icon: TriangleAlert, trend: "down", tone: "good", value: "-13%" },
-      { label: "Frequent tab switching", icon: RefreshCw, trend: "down", tone: "good", value: "-8%" },
+      { label: "Increased pause duration", icon: PauseCircle, trend: "down", tone: "good", value: "-10%", detail: "Break pacing is recovering toward baseline." },
+      { label: "Reduced typing speed", icon: Keyboard, trend: "up", tone: "good", value: "+9%", detail: "Typing rhythm is rebounding after fatigue." },
+      { label: "High error rate", icon: TriangleAlert, trend: "down", tone: "good", value: "-13%", detail: "Mistake frequency is falling after intervention." },
+      { label: "Frequent tab switching", icon: RefreshCw, trend: "down", tone: "good", value: "-8%", detail: "Task focus is becoming more stable." },
     ],
   },
 };
 
 const metricCards = [
-  { key: "typingSpeed", label: "Typing Speed", suffix: "WPM", icon: Keyboard },
-  { key: "errorRate", label: "Error Rate", suffix: "%", icon: AlertTriangle },
-  { key: "mouseActivity", label: "Mouse Activity", suffix: "%", icon: MousePointer2 },
-  { key: "tabSwitchCount", label: "Tab Switch Count", suffix: "", icon: SquareMousePointer },
-  { key: "sessionDuration", label: "Session Duration", suffix: "min", icon: Clock3 },
+  { key: "typingSpeed", label: "Typing Speed", suffix: "WPM", icon: Keyboard, healthy: "75-90", description: "Keyboard throughput over the last 5 minutes" },
+  { key: "errorRate", label: "Error Rate", suffix: "%", icon: AlertTriangle, healthy: "< 3%", description: "Corrections, deletions, and typo frequency" },
+  { key: "mouseActivity", label: "Mouse Activity", suffix: "%", icon: MousePointer2, healthy: "60-90%", description: "Movement energy and interaction consistency" },
+  { key: "tabSwitchCount", label: "Tab Switch Count", suffix: "", icon: SquareMousePointer, healthy: "0-8", description: "Context switches in the current window" },
+  { key: "sessionDuration", label: "Session Duration", suffix: "min", icon: Clock3, healthy: "< 90 min", description: "Continuous work time without full reset" },
 ];
 
 const riskStyles = {
@@ -102,16 +141,19 @@ const riskStyles = {
     color: "#2dd4bf",
     soft: "rgba(45, 212, 191, 0.14)",
     text: "System stable",
+    accent: "Low cognitive strain",
   },
   MEDIUM: {
     color: "#fbbf24",
     soft: "rgba(251, 191, 36, 0.14)",
     text: "Monitor closely",
+    accent: "Moderate drift detected",
   },
   HIGH: {
     color: "#fb7185",
     soft: "rgba(251, 113, 133, 0.14)",
     text: "Immediate attention",
+    accent: "Intervention recommended",
   },
 };
 
@@ -155,9 +197,19 @@ function buildArea(values, width, height, padding) {
   return `${line} L ${endX} ${baseY} L ${startX} ${baseY} Z`;
 }
 
-function MetricCard({ icon: Icon, label, value, suffix, tone, trendUp }) {
+function getRiskSummaryText(riskLevel) {
+  if (riskLevel === "HIGH") {
+    return "Your operator is likely fatigued and needs immediate recovery support.";
+  }
+  if (riskLevel === "MEDIUM") {
+    return "Fatigue signals are building. This is a good time to intervene gently.";
+  }
+  return "Current behavior is stable and operating within a safe range.";
+}
+
+function MetricCard({ icon: Icon, label, value, suffix, tone, trendUp, description, healthy }) {
   return (
-    <div className="glass-card metric-shine float-in rounded-3xl p-4">
+    <div className="glass-card metric-shine rounded-3xl p-4">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/6 text-slate-100">
           <Icon size={20} />
@@ -175,6 +227,8 @@ function MetricCard({ icon: Icon, label, value, suffix, tone, trendUp }) {
         <span className="font-display text-3xl font-bold text-white">{value}</span>
         <span className="pb-1 text-sm text-slate-400">{suffix}</span>
       </div>
+      {description ? <p className="mt-3 text-sm leading-6 text-slate-400">{description}</p> : null}
+      {healthy ? <p className="mt-2 text-xs uppercase tracking-[0.25em] text-slate-500">Healthy range: {healthy}</p> : null}
     </div>
   );
 }
@@ -228,12 +282,532 @@ function TrendChart({ data, color }) {
   );
 }
 
+function SectionHeader({ eyebrow, title, description, action }) {
+  return (
+    <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <p className="text-sm uppercase tracking-[0.3em] text-slate-400">{eyebrow}</p>
+        <h2 className="mt-2 font-display text-3xl font-semibold text-white">{title}</h2>
+        {description ? <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">{description}</p> : null}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function OverviewPage({
+  state,
+  risk,
+  gaugeStyle,
+  lastUpdated,
+  demoMode,
+  setDemoMode,
+  metricCards,
+  setActivePage,
+}) {
+  return (
+    <div className="space-y-6">
+      {state.riskLevel === "HIGH" ? (
+        <div className="pulse-critical glass-card rounded-[28px] border border-rose-400/25 bg-rose-500/10 px-5 py-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <ShieldAlert className="text-rose-300" size={22} />
+              <div>
+                <p className="font-display text-lg font-semibold text-rose-100">High fatigue detected</p>
+                <p className="text-sm text-rose-100/80">Take a 5-minute break to reduce error risk.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActivePage("recovery")}
+              className="rounded-full bg-rose-200/10 px-4 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-200/15"
+            >
+              Open recovery plan
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+        <div className="glass-card hero-grid overflow-hidden rounded-[34px] p-6 lg:p-8">
+          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div>
+              <p className="mb-3 text-sm uppercase tracking-[0.35em] text-sky-300/75">Main Dashboard</p>
+              <div className="mb-5 flex flex-wrap items-center gap-3">
+                <span
+                  className="rounded-full px-4 py-1.5 text-sm font-semibold"
+                  style={{ backgroundColor: risk.soft, color: risk.color }}
+                >
+                  {state.riskLevel} RISK
+                </span>
+                <span className="rounded-full border border-white/10 px-4 py-1.5 text-sm text-slate-300">
+                  {risk.accent}
+                </span>
+              </div>
+              <h2 className="max-w-lg font-display text-4xl font-bold leading-tight lg:text-5xl">
+                One clear fatigue score. One clear next step.
+              </h2>
+              <p className="mt-4 max-w-xl text-base leading-7 text-slate-300">{getRiskSummaryText(state.riskLevel)}</p>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <div className="rounded-3xl border border-white/10 bg-white/6 px-5 py-4">
+                  <p className="text-sm text-slate-400">Fatigue Score</p>
+                  <div className="font-display text-4xl font-bold">{Math.round(state.fatigueScore)}%</div>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/6 px-5 py-4">
+                  <p className="text-sm text-slate-400">Status</p>
+                  <div className="font-display text-4xl font-bold">{state.status}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center gap-5">
+              <div className="gauge-ring soft-spin relative flex h-72 w-72 items-center justify-center rounded-full" style={gaugeStyle}>
+                <div className="relative z-10 text-center">
+                  <p className="text-sm uppercase tracking-[0.35em] text-slate-400">Live Score</p>
+                  <div className="mt-3 font-display text-6xl font-bold">{Math.round(state.fatigueScore)}</div>
+                  <p className="mt-2 text-sm text-slate-400">Last updated: {lastUpdated} seconds ago</p>
+                </div>
+              </div>
+              <div className="grid w-full grid-cols-3 gap-3">
+                {["Normal", "Fatigued", "Recovery"].map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setDemoMode(item)}
+                    className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+                      demoMode === item
+                        ? "border-sky-300/50 bg-sky-400/15 text-white"
+                        : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/8"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-[34px] p-6">
+          <SectionHeader
+            eyebrow="Navigation"
+            title="Explore Each Feature"
+            description="Use these focused pages to explain the system quickly to judges, teammates, or users."
+          />
+          <div className="space-y-3">
+            {pageDefinitions
+              .filter((page) => page.id !== "overview")
+              .map((page) => {
+                const Icon = page.icon;
+                return (
+                  <button
+                    key={page.id}
+                    type="button"
+                    onClick={() => setActivePage(page.id)}
+                    className="flex w-full items-center justify-between rounded-3xl border border-white/8 bg-white/4 px-4 py-4 text-left transition hover:border-sky-300/25 hover:bg-sky-400/8"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-400/10 text-sky-300">
+                        <Icon size={20} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">{page.label}</p>
+                        <p className="text-sm text-slate-400">{page.description}</p>
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="text-slate-400" />
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {metricCards.map((metric) => {
+          const value = state[metric.key];
+          const trendUp = metric.key === "errorRate" || metric.key === "tabSwitchCount"
+            ? state.riskLevel === "HIGH"
+            : state.riskLevel !== "HIGH";
+          return (
+            <MetricCard
+              key={metric.key}
+              icon={metric.icon}
+              label={metric.label}
+              value={value}
+              suffix={metric.suffix}
+              trendUp={trendUp}
+              tone={risk}
+            />
+          );
+        })}
+      </section>
+    </div>
+  );
+}
+
+function ExplainabilityPage({ state, risk, setActivePage }) {
+  return (
+    <div className="glass-card rounded-[34px] p-6">
+      <SectionHeader
+        eyebrow="Explainability"
+        title="Why Is Fatigue Changing?"
+        description="This page isolates the top model signals so non-technical viewers can understand what drove the score."
+        action={
+          <button
+            type="button"
+            onClick={() => setActivePage("metrics")}
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+          >
+            Open live metrics
+          </button>
+        }
+      />
+      <div className="grid gap-4 lg:grid-cols-2">
+        {state.factors.map((factor, index) => {
+          const bad = factor.tone === "bad";
+          const toneColor = bad ? "text-rose-300" : "text-emerald-300";
+          const bgTone = bad ? "bg-rose-400/10" : "bg-emerald-400/10";
+          const TrendIcon = factor.trend === "up" ? TrendingUp : TrendingDown;
+          return (
+            <div key={factor.label} className="rounded-3xl border border-white/8 bg-white/4 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${bgTone} ${toneColor}`}>
+                    <factor.icon size={20} />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">{factor.label}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">{factor.detail}</p>
+                  </div>
+                </div>
+                <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm ${bgTone} ${toneColor}`}>
+                  <TrendIcon size={16} />
+                  {factor.value}
+                </div>
+              </div>
+              <div className="mt-5 flex items-center justify-between border-t border-white/8 pt-4">
+                <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Signal rank #{index + 1}</span>
+                <span style={{ color: risk.color }} className="text-sm font-medium">
+                  {bad ? "Driving fatigue upward" : "Improving fatigue outlook"}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MetricsPage({ state, risk }) {
+  return (
+    <div className="space-y-6">
+      <div className="glass-card rounded-[34px] p-6">
+        <SectionHeader
+          eyebrow="Live Metrics"
+          title="Behavioral Telemetry"
+          description="These are the raw signals feeding the fatigue model. They update every 5 seconds in demo mode."
+        />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {metricCards.map((metric) => {
+            const value = state[metric.key];
+            const trendUp = metric.key === "errorRate" || metric.key === "tabSwitchCount"
+              ? state.riskLevel === "HIGH"
+              : state.riskLevel !== "HIGH";
+            return (
+              <MetricCard
+                key={metric.key}
+                icon={metric.icon}
+                label={metric.label}
+                value={value}
+                suffix={metric.suffix}
+                trendUp={trendUp}
+                tone={risk}
+                description={metric.description}
+                healthy={metric.healthy}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="glass-card rounded-[34px] p-6">
+          <SectionHeader
+            eyebrow="Session Awareness"
+            title="Operator State"
+            description="A plain-language summary of the current session."
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <p className="text-sm text-slate-400">Session Duration</p>
+              <div className="mt-2 font-display text-4xl font-bold text-white">{state.sessionDuration} mins</div>
+              <p className="mt-3 text-sm text-slate-400">Continuous work time since the last full reset or recovery break.</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <p className="text-sm text-slate-400">Pause Duration</p>
+              <div className="mt-2 font-display text-4xl font-bold text-white">{state.pauseDuration}s</div>
+              <p className="mt-3 text-sm text-slate-400">Average pause duration over recent monitoring windows.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-[34px] p-6">
+          <SectionHeader
+            eyebrow="Interpretation"
+            title="What The Signals Suggest"
+            description="Simple guidance to explain the telemetry in human terms."
+          />
+          <div className="space-y-3">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="font-medium text-white">Typing throughput</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Lower typing speed can signal slowed cognition, hesitation, or reduced mental stamina.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="font-medium text-white">Error frequency</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Rising corrections often appear before the user consciously feels exhausted.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="font-medium text-white">Context switching</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Frequent tab switching may indicate loss of focus, uncertainty, or overload.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrendsPage({ chartData, risk, state, lastUpdated }) {
+  return (
+    <div className="space-y-6">
+      <div className="glass-card rounded-[34px] p-6">
+        <SectionHeader
+          eyebrow="Trend Analysis"
+          title="Fatigue Score Over Time"
+          description="A rising red trend means strain is accelerating. A falling trend suggests recovery is working."
+          action={<div className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-slate-300">Updates every 5s</div>}
+        />
+        <TrendChart data={chartData} color={risk.color} />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="glass-card rounded-[34px] p-6">
+          <SectionHeader
+            eyebrow="Snapshot"
+            title="Current Session State"
+            description="A compact operational summary for team leads and judges."
+          />
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm text-slate-400">Session Time</p>
+              <div className="mt-1 font-display text-3xl font-bold">{state.sessionDuration} mins</div>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm text-slate-400">Risk Level</p>
+              <div className="mt-1 font-display text-3xl font-bold" style={{ color: risk.color }}>
+                {state.riskLevel}
+              </div>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm text-slate-400">Last update</p>
+              <div className="mt-1 font-display text-3xl font-bold">{lastUpdated}s ago</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-[34px] p-6">
+          <SectionHeader
+            eyebrow="Narrative"
+            title="How To Read This Trend"
+            description="This helps a presenter explain the graph in a few seconds."
+          />
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="font-medium text-white">Stable</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Scores hold in a narrow band. The user is performing consistently without major cognitive drift.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="font-medium text-white">Rising risk</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Scores climb over consecutive windows, signaling fatigue escalation before visible failure occurs.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="font-medium text-white">Recovery</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Scores move downward after intervention, showing that rest is improving performance.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecoveryPage({
+  state,
+  risk,
+  breakTakenAt,
+  alertAcknowledged,
+  setAlertAcknowledged,
+  setBreakTakenAt,
+  setDemoMode,
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="glass-card rounded-[34px] p-6">
+        <SectionHeader
+          eyebrow="Recovery Hub"
+          title="Actions, Baseline, And Readiness"
+          description="This page turns fatigue prediction into something operational: acknowledge, recover, and compare against personal norms."
+        />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => setAlertAcknowledged(true)}
+            className="rounded-3xl border border-white/10 bg-white/5 p-5 text-left transition hover:bg-white/8"
+          >
+            <CheckCircle2 size={22} className="text-emerald-300" />
+            <p className="mt-4 font-medium text-white">Acknowledge alert</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              {alertAcknowledged ? "Alert already acknowledged for this demo session." : "Mark the warning as seen by the operator or supervisor."}
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setBreakTakenAt(new Date().toLocaleTimeString());
+              setDemoMode("Recovery");
+            }}
+            className="rounded-3xl border border-white/10 bg-white/5 p-5 text-left transition hover:bg-white/8"
+          >
+            <PauseCircle size={22} className="text-amber-300" />
+            <p className="mt-4 font-medium text-white">Start recovery break</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Switches the simulation to Recovery mode and records when the break started.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setDemoMode("Normal")}
+            className="rounded-3xl border border-white/10 bg-white/5 p-5 text-left transition hover:bg-white/8"
+          >
+            <Sparkles size={22} className="text-sky-300" />
+            <p className="mt-4 font-medium text-white">Resume normal session</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Return to the low-risk simulation state after recovery is complete.
+            </p>
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="glass-card rounded-[34px] p-6">
+          <SectionHeader
+            eyebrow="Adaptive Personal Baseline"
+            title="Deviation From Normal Behavior"
+            description="The system compares today's signals to this person's usual operating pattern instead of a generic average."
+          />
+          <div className="space-y-5">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-slate-300">Typing Speed</span>
+                <span className="font-semibold text-rose-300">Down {Math.abs(state.baselineTypingDelta)}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sky-400 to-emerald-300 transition-[width] duration-700"
+                  style={{ width: `${100 + state.baselineTypingDelta}%` }}
+                />
+              </div>
+              <p className="mt-3 text-sm text-slate-400">Current typing speed is below the user's normal operating rhythm.</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-slate-300">Error Rate</span>
+                <span className="font-semibold text-amber-300">Up {state.baselineErrorDelta}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-300 to-rose-400 transition-[width] duration-700"
+                  style={{ width: `${Math.min(100, 45 + state.baselineErrorDelta)}%` }}
+                />
+              </div>
+              <p className="mt-3 text-sm text-slate-400">Error patterns are elevated compared with the user's usual precision baseline.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6">
+          <div className="glass-card rounded-[34px] p-6">
+            <SectionHeader
+              eyebrow="Recommended Action"
+              title="Recovery Recommendation"
+              description="The UI translates prediction into action."
+            />
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+              <div className="flex items-start gap-3">
+                <div
+                  className="mt-1 flex h-11 w-11 items-center justify-center rounded-2xl"
+                  style={{ backgroundColor: risk.soft, color: risk.color }}
+                >
+                  <HeartPulse size={20} />
+                </div>
+                <div>
+                  <p className="text-lg font-medium text-white">{state.suggestion}</p>
+                  <p className="mt-1 text-sm text-slate-400">Advice adapts automatically to the current fatigue state.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-[34px] p-6">
+            <SectionHeader
+              eyebrow="Recovery Status"
+              title="Session Intervention Log"
+              description="Simple local actions to make the multi-page demo feel interactive."
+            />
+            <div className="space-y-3">
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                <p className="text-sm text-slate-400">Alert acknowledged</p>
+                <p className="mt-1 font-medium text-white">{alertAcknowledged ? "Yes" : "No"}</p>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                <p className="text-sm text-slate-400">Break started</p>
+                <p className="mt-1 font-medium text-white">{breakTakenAt || "Not started yet"}</p>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                <p className="text-sm text-slate-400">Current mode</p>
+                <p className="mt-1 font-medium text-white">{state.status}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const [activePage, setActivePage] = useState("overview");
   const [mode, setMode] = useState("Developer");
   const [demoMode, setDemoMode] = useState("Normal");
   const [sessionTimer, setSessionTimer] = useState(0);
   const [lastUpdated, setLastUpdated] = useState(0);
   const [state, setState] = useState(scenarios.Normal);
+  const [alertAcknowledged, setAlertAcknowledged] = useState(false);
+  const [breakTakenAt, setBreakTakenAt] = useState("");
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -266,6 +840,9 @@ function App() {
   useEffect(() => {
     setState(scenarios[demoMode]);
     setLastUpdated(0);
+    if (demoMode !== "Fatigued") {
+      setAlertAcknowledged(false);
+    }
   }, [demoMode]);
 
   const risk = riskStyles[state.riskLevel];
@@ -274,6 +851,42 @@ function App() {
   const gaugeStyle = {
     background: `conic-gradient(${risk.color} ${state.fatigueScore * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
   };
+  const activePageMeta = pageDefinitions.find((page) => page.id === activePage) || pageDefinitions[0];
+
+  let pageContent = null;
+
+  if (activePage === "overview") {
+    pageContent = (
+      <OverviewPage
+        state={state}
+        risk={risk}
+        gaugeStyle={gaugeStyle}
+        lastUpdated={lastUpdated}
+        demoMode={demoMode}
+        setDemoMode={setDemoMode}
+        metricCards={metricCards}
+        setActivePage={setActivePage}
+      />
+    );
+  } else if (activePage === "explainability") {
+    pageContent = <ExplainabilityPage state={state} risk={risk} setActivePage={setActivePage} />;
+  } else if (activePage === "metrics") {
+    pageContent = <MetricsPage state={state} risk={risk} />;
+  } else if (activePage === "trends") {
+    pageContent = <TrendsPage chartData={chartData} risk={risk} state={state} lastUpdated={lastUpdated} />;
+  } else if (activePage === "recovery") {
+    pageContent = (
+      <RecoveryPage
+        state={state}
+        risk={risk}
+        breakTakenAt={breakTakenAt}
+        alertAcknowledged={alertAcknowledged}
+        setAlertAcknowledged={setAlertAcknowledged}
+        setBreakTakenAt={setBreakTakenAt}
+        setDemoMode={setDemoMode}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen px-4 py-5 text-white sm:px-6 lg:px-8">
@@ -311,241 +924,61 @@ function App() {
           </div>
         </nav>
 
-        {state.riskLevel === "HIGH" ? (
-          <div className="pulse-critical glass-card float-in rounded-[28px] border border-rose-400/25 bg-rose-500/10 px-5 py-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <ShieldAlert className="text-rose-300" size={22} />
-                <div>
-                  <p className="font-display text-lg font-semibold text-rose-100">High fatigue detected</p>
-                  <p className="text-sm text-rose-100/80">Take a 5-minute break to reduce error risk.</p>
-                </div>
-              </div>
-              <div className="rounded-full bg-rose-200/10 px-4 py-2 text-sm font-medium text-rose-100">
-                Intervention recommended now
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <section className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
-          <div className="glass-card hero-grid float-in overflow-hidden rounded-[34px] p-6 lg:p-8">
-            <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-              <div>
-                <p className="mb-3 text-sm uppercase tracking-[0.35em] text-sky-300/75">Real-Time Risk Status</p>
-                <div className="mb-5 flex flex-wrap items-center gap-3">
-                  <span
-                    className="rounded-full px-4 py-1.5 text-sm font-semibold"
-                    style={{ backgroundColor: risk.soft, color: risk.color }}
-                  >
-                    {state.riskLevel} RISK
-                  </span>
-                  <span className="rounded-full border border-white/10 px-4 py-1.5 text-sm text-slate-300">
-                    {risk.text}
-                  </span>
-                </div>
-                <h2 className="max-w-lg font-display text-4xl font-bold leading-tight lg:text-5xl">
-                  Fatigue risk is {state.riskLevel.toLowerCase()} and easy to act on.
-                </h2>
-                <p className="mt-4 max-w-xl text-base leading-7 text-slate-300">
-                  Live behavioral telemetry is converted into one clear score, top causes, and next-step guidance for
-                  fast decision-making.
-                </p>
-                <div className="mt-8 flex flex-wrap gap-4">
-                  <div className="rounded-3xl border border-white/10 bg-white/6 px-5 py-4">
-                    <p className="text-sm text-slate-400">Fatigue Score</p>
-                    <div className="font-display text-4xl font-bold">{Math.round(state.fatigueScore)}%</div>
-                  </div>
-                  <div className="rounded-3xl border border-white/10 bg-white/6 px-5 py-4">
-                    <p className="text-sm text-slate-400">Last updated</p>
-                    <div className="font-display text-4xl font-bold">{lastUpdated}s</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center justify-center gap-5">
-                <div className="gauge-ring soft-spin relative flex h-72 w-72 items-center justify-center rounded-full" style={gaugeStyle}>
-                  <div className="relative z-10 text-center">
-                    <p className="text-sm uppercase tracking-[0.35em] text-slate-400">Live Score</p>
-                    <div className="mt-3 font-display text-6xl font-bold">{Math.round(state.fatigueScore)}</div>
-                    <p className="mt-2 text-sm text-slate-400">Last updated: {lastUpdated} seconds ago</p>
-                  </div>
-                </div>
-                <div className="grid w-full grid-cols-3 gap-3">
-                  {["Normal", "Fatigued", "Recovery"].map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setDemoMode(item)}
-                      className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
-                        demoMode === item
-                          ? "border-sky-300/50 bg-sky-400/15 text-white"
-                          : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/8"
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card float-in rounded-[34px] p-6">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-400/10 text-sky-300">
-                <BrainCircuit />
-              </div>
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Explainable AI</p>
-                <h3 className="font-display text-2xl font-semibold">Why is fatigue high?</h3>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {state.factors.map((factor) => {
-                const bad = factor.tone === "bad";
-                const toneColor = bad ? "text-rose-300" : "text-emerald-300";
-                const bgTone = bad ? "bg-rose-400/10" : "bg-emerald-400/10";
-                const TrendIcon = factor.trend === "up" ? TrendingUp : TrendingDown;
+        <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="glass-card float-in rounded-[34px] p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-500">Feature Pages</p>
+            <div className="mt-4 space-y-3">
+              {pageDefinitions.map((page) => {
+                const Icon = page.icon;
+                const active = activePage === page.id;
                 return (
-                  <div key={factor.label} className="rounded-3xl border border-white/8 bg-white/4 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${bgTone} ${toneColor}`}>
-                          <factor.icon size={20} />
-                        </div>
-                        <div>
-                          <p className="font-medium text-white">{factor.label}</p>
-                          <p className="text-sm text-slate-400">Model confidence signal</p>
-                        </div>
-                      </div>
-                      <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm ${bgTone} ${toneColor}`}>
-                        <TrendIcon size={16} />
-                        {factor.value}
-                      </div>
+                  <button
+                    key={page.id}
+                    type="button"
+                    onClick={() => setActivePage(page.id)}
+                    className={`flex w-full items-center gap-3 rounded-3xl border px-4 py-4 text-left transition ${
+                      active
+                        ? "border-sky-300/35 bg-sky-400/12"
+                        : "border-white/8 bg-white/4 hover:border-white/15 hover:bg-white/7"
+                    }`}
+                  >
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${active ? "bg-sky-400/20 text-sky-300" : "bg-white/6 text-slate-300"}`}>
+                      <Icon size={20} />
                     </div>
-                  </div>
+                    <div>
+                      <p className="font-medium text-white">{page.label}</p>
+                      <p className="text-sm text-slate-400">{page.description}</p>
+                    </div>
+                  </button>
                 );
               })}
             </div>
-          </div>
-        </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {metricCards.map((metric) => {
-            const value = state[metric.key];
-            const trendUp = metric.key === "errorRate" || metric.key === "tabSwitchCount"
-              ? state.riskLevel === "HIGH"
-              : state.riskLevel !== "HIGH";
-            return (
-              <MetricCard
-                key={metric.key}
-                icon={metric.icon}
-                label={metric.label}
-                value={value}
-                suffix={metric.suffix}
-                trendUp={trendUp}
-                tone={risk}
-              />
-            );
-          })}
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-          <div className="glass-card float-in rounded-[34px] p-6">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Trend Analysis</p>
-                <h3 className="font-display text-2xl font-semibold">Fatigue Score Over Time</h3>
-              </div>
-              <div className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-slate-300">Updates every 5s</div>
+            <div className="mt-6 rounded-3xl border border-white/8 bg-white/4 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Current Page</p>
+              <p className="mt-2 font-display text-2xl font-semibold text-white">{activePageMeta.label}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">{activePageMeta.description}</p>
             </div>
-            <TrendChart data={chartData} color={risk.color} />
-          </div>
+          </aside>
 
-          <div className="grid gap-6">
-            <div className="glass-card float-in rounded-[34px] p-6">
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Session Awareness</p>
-              <h3 className="mt-2 font-display text-2xl font-semibold">Current Operator State</h3>
-              <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Session Time</span>
-                  <span className="font-display text-2xl font-bold">{state.sessionDuration} mins</span>
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-slate-400">Status</span>
-                  <span
-                    className="rounded-full px-3 py-1.5 text-sm font-semibold"
-                    style={{ backgroundColor: risk.soft, color: risk.color }}
-                  >
-                    {state.status}
-                  </span>
-                </div>
-              </div>
-            </div>
+          <main className="min-w-0">{pageContent}</main>
+        </div>
 
-            <div className="glass-card float-in rounded-[34px] p-6">
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Smart Suggestions</p>
-              <h3 className="mt-2 font-display text-2xl font-semibold">Recommended Action</h3>
-              <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-5">
-                <div className="flex items-start gap-3">
-                  <div
-                    className="mt-1 flex h-11 w-11 items-center justify-center rounded-2xl"
-                    style={{ backgroundColor: risk.soft, color: risk.color }}
-                  >
-                    <HeartPulse size={20} />
-                  </div>
-                  <div>
-                    <p className="text-lg font-medium text-white">{state.suggestion}</p>
-                    <p className="mt-1 text-sm text-slate-400">Advice adapts automatically to current fatigue state.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="glass-card float-in rounded-[34px] p-6">
-          <div className="mb-6 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <footer className="glass-card float-in rounded-[28px] px-5 py-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Adaptive Personal Baseline</p>
-              <h3 className="font-display text-2xl font-semibold">Deviation from Your Normal Behavior</h3>
+              <p className="font-display text-xl font-semibold text-white">NeuroShield Demo Suite</p>
+              <p className="text-sm text-slate-400">
+                Multi-page demo experience for fatigue prediction, explainability, recovery guidance, and trend storytelling.
+              </p>
             </div>
-            <p className="max-w-xl text-sm text-slate-400">
-              The model compares your current behavior to your personal baseline rather than a generic average.
-            </p>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-slate-300">Typing Speed</span>
-                <span className="font-semibold text-rose-300">Down {Math.abs(state.baselineTypingDelta)}%</span>
-              </div>
-              <div className="h-3 overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-sky-400 to-emerald-300 transition-[width] duration-700"
-                  style={{ width: `${100 + state.baselineTypingDelta}%` }}
-                />
-              </div>
-              <p className="mt-3 text-sm text-slate-400">Current typing speed is below your normal operating rhythm.</p>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-slate-300">Error Rate</span>
-                <span className="font-semibold text-amber-300">Up {state.baselineErrorDelta}%</span>
-              </div>
-              <div className="h-3 overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-300 to-rose-400 transition-[width] duration-700"
-                  style={{ width: `${Math.min(100, 45 + state.baselineErrorDelta)}%` }}
-                />
-              </div>
-              <p className="mt-3 text-sm text-slate-400">Error patterns are elevated versus your usual precision baseline.</p>
+            <div className="flex flex-wrap gap-3 text-sm text-slate-300">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Mode: {mode}</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Demo: {demoMode}</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">Live updates: every 5s</span>
             </div>
           </div>
-        </section>
+        </footer>
       </div>
     </div>
   );
